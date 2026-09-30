@@ -1,6 +1,7 @@
 from apps.shop.managers.buy import BuyManager
 from apps.shop.serializers.buy import BuySerializer
-from apps.shop.ui.buy import BuyView
+from apps.shop.ui.buy.buy import BuyView
+
 from apps.shop.use_case.buy.create import CreateBuy
 from apps.shop.use_case.buy.list import ListBuy
 from apps.shop.use_case.buy.validate import ValidateBuy
