@@ -1,5 +1,5 @@
 class GenericController:
-    titulo = ""
+    title = ""
     manager_class = None
     serializer_class = None
     ui_class = None
@@ -11,7 +11,7 @@ class GenericController:
         return self.serializer_class
 
     def build_ui(self):
-        return self.ui_class(viewset=self)
+        return self.ui_class(controller=self)
 
     def get_or_fail(self, manager, pk):
         obj = manager.retrieve(pk)

@@ -2,9 +2,9 @@ from config.database import session_scope
 
 
 class ListUseCase:
-    def list(self, **filtros):
+    def list(self, **filters):
         with session_scope() as session:
-            return self.manager_class(session).list(**filtros)
+            return self.manager_class(session).list(**filters)
 
 
 class RetrieveUseCase:
@@ -14,8 +14,8 @@ class RetrieveUseCase:
 
 
 class CreateUseCase:
-    def create(self, datos):
-        validated_data = self.serializer_class(datos).validate()
+    def create(self, data):
+        validated_data = self.serializer_class(data).validate()
         with session_scope() as session:
             return self.manager_class(session).create(**validated_data)
 

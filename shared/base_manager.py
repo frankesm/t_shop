@@ -8,8 +8,8 @@ class BaseManager:
     def __init__(self, session):
         self.session = session
 
-    def list(self, **filtros):
-        query = self.session.query(self.model).filter_by(**filtros)
+    def list(self, **filters):
+        query = self.session.query(self.model).filter_by(**filters)
 
         if self.ordering:
             ordering = [func.lower(field) for field in self.ordering]
@@ -34,3 +34,6 @@ class BaseManager:
 
     def delete(self, obj):
         self.session.delete(obj)
+
+    def get(self, **kwargs):
+        return self.session.query(self.model).filter_by(**kwargs).first()

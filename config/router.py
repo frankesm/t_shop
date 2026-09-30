@@ -1,3 +1,6 @@
+from apps.shop.controller.buy import BuyController
+
+
 class Router:
     def __init__(self):
         self.controllers = []
@@ -7,4 +10,4 @@ class Router:
 
 
 router = Router()
-# router.register()
+router.register(BuyController)

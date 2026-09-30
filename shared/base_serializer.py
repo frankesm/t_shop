@@ -5,7 +5,7 @@ class Serializer:
 
     fields = {}
 
-    def __init__(self, data, parcial=False):
+    def __init__(self, data=None, parcial=False):
         self.data = data or {}
         self.parcial = parcial
         self.errors = {}
@@ -24,7 +24,12 @@ class Serializer:
                     value = validador(value)
                 self.validated_data[field_name] = value
             except Exception as e:
-                self.errors.setdefault(field_name, []).append(str(e))
+                error = e.args[0] if e.args else str(e)
+
+                if isinstance(error, (dict, list)):
+                    self.errors[field_name] = error
+                else:
+                    self.errors.setdefault(field_name, []).append(error)
 
         if not self.errors:
             try:
@@ -41,3 +46,20 @@ class Serializer:
         if not self.is_valid():
             raise ValidacionError(self.errors)
         return self.validated_data
+
+    def to_internal_value(self, data):
+        validated_data = {}
+
+        for field_name, field_value in self.fields.items():
+            if self.parcial and field_name not in data:
+                continue
+
+            value = field_value.clean(data.get(field_name))
+
+            validador = getattr(self, f"validate_{field_name}", None)
+            if validador:
+                value = validador(value)
+
+            validated_data[field_name] = value
+
+        return validated_data

@@ -2,8 +2,8 @@ import math
 
 
 class Field:
-    def __init__(self, requerido=True, default=None):
-        self.requerido = requerido
+    def __init__(self, required=True, default=None):
+        self.required = required
         self.default = default
 
     @staticmethod
@@ -12,7 +12,7 @@ class Field:
 
     def clean(self, value):
         if self.is_empty(value):
-            if self.requerido:
+            if self.required:
                 raise Exception("Este campo es obligatorio.")
             return self.default
         return self.to_internal_value(value)
@@ -68,3 +68,82 @@ class IntegerField(Field):
         if self.min_value is not None and numero < self.min_value:
             raise Exception(f"Debe ser mayor o igual a {self.min_value}.")
         return numero
+
+
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation, ROUND_DOWN
+
+
+class DateField(Field):
+    formats = ("%Y-%m-%d", "%d/%m/%Y")
+
+    def to_internal_value(self, value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        for fmt in self.formats:
+            try:
+                return datetime.strptime(str(value).strip(), fmt).date()
+            except ValueError:
+                continue
+        raise Exception("Fecha inválida. Usa el formato dd/mm/aaaa.")
+
+
+class DecimalField(Field):
+    def __init__(self, min_value=None, decimal_places=2, **kwargs):
+        super().__init__(**kwargs)
+        self.min_value = None if min_value is None else Decimal(str(min_value))
+        self.quantum = Decimal(1).scaleb(-decimal_places)
+
+    def to_internal_value(self, value):
+        if isinstance(value, str):
+            value = value.strip().replace(",", ".")
+        try:
+            number = Decimal(str(value))
+        except (InvalidOperation, ValueError):
+            raise Exception("Debe ser un número.")
+        if not number.is_finite():
+            raise Exception("Debe ser un número.")
+        number = number.quantize(self.quantum, rounding=ROUND_DOWN)
+        if self.min_value is not None and number < self.min_value:
+            raise Exception(f"Debe ser mayor o igual a {self.min_value}.")
+        return number
+
+
+class PositiveDecimal(DecimalField):
+    def to_internal_value(self, value):
+        number = super().to_internal_value(value)
+
+        if number <= 0:
+            raise Exception("Debe ser un número positivo.")
+
+        return number
+
+
+class ListField(Field):
+    def __init__(self, child, min_items=1, **kwargs):
+        super().__init__(**kwargs)
+        self.child = child
+        self.min_items = min_items
+
+    def to_internal_value(self, value):
+        name = getattr(self.child, "verbose_name", "Elemento")
+
+        if not isinstance(value, (list, tuple)):
+            raise Exception("Debe ser una lista.")
+        if len(value) < self.min_items:
+            raise Exception(f"Agrega al menos {self.min_items} {name.lower()}.")
+
+        serializer_class = type(self.child)
+        items, errors = [], []
+        for raw in value:
+            serializer = serializer_class(raw)
+            if serializer.is_valid():
+                items.append(serializer.validated_data)
+                errors.append({})
+            else:
+                errors.append(dict(serializer.errors))
+        if errors:
+            raise Exception(errors)
+        return items

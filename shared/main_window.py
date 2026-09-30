@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
         for controller in router.controllers:
-            self.tabs.addTab(controller.build_ui(), controller.titulo)
+            self.tabs.addTab(controller.build_ui(), controller.title)
         self.tabs.currentChanged.connect(self.on_tab_changed)
         self.setCentralWidget(self.tabs)
 
