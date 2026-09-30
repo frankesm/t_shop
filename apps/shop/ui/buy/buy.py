@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QMessageBox,
@@ -10,8 +10,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QTreeWidget,
-    QWidget,
     QSizePolicy,
+    QWidget,
 )
 
 from apps.shop.ui.buy.new_buy_panel import NewBuyPanel
@@ -224,8 +224,11 @@ class BuyView(QWidget):
             table.raise_()
             table.show()
 
+    def _schedule_reposition(self):
+        QTimer.singleShot(0, self._position_product_tables)
+
     def _on_item_expanded(self, item):
-        self._position_product_tables()
+        self._schedule_reposition()
 
     def _on_item_collapsed(self, item):
         table = self.product_tables.get(item)
@@ -233,12 +236,24 @@ class BuyView(QWidget):
         if table:
             table.hide()
 
+        self._schedule_reposition()
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
         self._position_product_tables()
 
     def refresh(self):
+        try:
+            buys = self.controller.list()
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"No se pudo cargar el listado:\n{exc}",
+            )
+            return
+
         expanded = {
             self.tree.topLevelItem(i).data(
                 0,
@@ -254,16 +269,6 @@ class BuyView(QWidget):
         self.product_tables.clear()
 
         self.tree.clear()
-
-        try:
-            buys = self.controller.list()
-        except Exception as exc:
-            QMessageBox.critical(
-                self,
-                "Error",
-                f"No se pudo cargar el listado:\n{exc}",
-            )
-            return
 
         right = Qt.AlignRight | Qt.AlignVCenter
 
@@ -294,6 +299,8 @@ class BuyView(QWidget):
 
             products_item = QTreeWidgetItem(item)
 
+            products_item.setFlags(Qt.NoItemFlags)
+
             products_table = self._build_products_table(
                 buy["products"],
             )
@@ -314,4 +321,4 @@ class BuyView(QWidget):
                 buy["id"] in expanded,
             )
 
-        self._position_product_tables()
+        self._schedule_reposition()
