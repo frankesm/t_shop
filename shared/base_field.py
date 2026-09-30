@@ -143,7 +143,8 @@ class ListField(Field):
                 items.append(serializer.validated_data)
                 errors.append({})
             else:
+                items.append(None)
                 errors.append(dict(serializer.errors))
-        if errors:
+        if any(errors):
             raise Exception(errors)
         return items
