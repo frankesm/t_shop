@@ -34,8 +34,8 @@ class BuyView(QWidget):
                 "Cantidad de productos",
                 "Costo productos",
                 "Otros costos",
-                "Transporte",
-                "Costo Unitario",
+                "Costo de Transporte",
+                "Costo Total",
             ]
         )
 
