@@ -28,6 +28,7 @@ class ListBuy(ListUseCase):
                             "unit": p.unit,
                             "amount": p.amount,
                             "buy_cost": p.buy_cost,
+                            "unit_cost": p.buy_cost / p.amount,
                         }
                         for p in b.products
                     ],
