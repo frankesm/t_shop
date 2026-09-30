@@ -90,12 +90,8 @@ class BuyView(QWidget):
         )
 
     def refresh(self):
-        # Recordar qué compras estaban desplegadas.
         expanded = {
-            self.tree.topLevelItem(i).data(
-                0,
-                Qt.UserRole,
-            )
+            self.tree.topLevelItem(i).data(0, Qt.UserRole)
             for i in range(self.tree.topLevelItemCount())
             if self.tree.topLevelItem(i).isExpanded()
         }
@@ -115,24 +111,15 @@ class BuyView(QWidget):
         right = Qt.AlignRight | Qt.AlignVCenter
 
         for buy in buys:
-            products = buy["products"]
-
-            product_cost = sum(product["buy_cost"] for product in products)
-
-            other_cost = buy["other_cost"]
-            transportation_cost = buy["transportation_cost"]
-
-            total_cost = product_cost + other_cost + transportation_cost
-
             item = QTreeWidgetItem(
                 [
                     buy["code"],
                     buy["date"].strftime("%d/%m/%Y"),
-                    f"{len(products)} productos",
-                    f"{product_cost:,.2f}",
-                    f"{other_cost:,.2f}",
-                    f"{transportation_cost:,.2f}",
-                    f"{total_cost:,.2f}",
+                    f'{buy["product_count"]} productos',
+                    f'{buy["product_cost"]:,.2f}',
+                    f'{buy["other_cost"]:,.2f}',
+                    f'{buy["transportation_cost"]:,.2f}',
+                    f'{buy["total_cost"]:,.2f}',
                 ]
             )
 
@@ -142,13 +129,13 @@ class BuyView(QWidget):
                 buy["id"],
             )
 
-            for product in products:
+            for product in buy["products"]:
                 child = QTreeWidgetItem(
                     [
-                        f"{product['code']} - {product['name']}",
+                        f'{product["code"]} - {product["name"]}',
                         "",
-                        f"{product['amount']} {product['unit']}",
-                        f"{product['buy_cost']:,.2f}",
+                        f'{product["amount"]} {product["unit"]}',
+                        f'{product["buy_cost"]:,.2f}',
                         "",
                         "",
                         "",
@@ -156,18 +143,12 @@ class BuyView(QWidget):
                 )
 
                 for col in range(2, 7):
-                    child.setTextAlignment(
-                        col,
-                        right,
-                    )
+                    child.setTextAlignment(col, right)
 
                 item.addChild(child)
 
             for col in range(2, 7):
-                item.setTextAlignment(
-                    col,
-                    right,
-                )
+                item.setTextAlignment(col, right)
 
             self.tree.addTopLevelItem(item)
 

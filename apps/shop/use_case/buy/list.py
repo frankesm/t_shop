@@ -6,12 +6,21 @@ class ListBuy(ListUseCase):
     def list(self, **filters):
         with session_scope() as session:
             buys = self.manager_class(session).list()
+
             return [
                 {
                     "id": b.id,
                     "date": b.date,
-                    "cost": b.cost,
+                    "code": b.code,
+                    "product_count": len(b.products),
+                    "product_cost": sum(product.buy_cost for product in b.products),
+                    "other_cost": b.other_cost,
                     "transportation_cost": b.transportation_cost,
+                    "total_cost": (
+                        sum(product.buy_cost for product in b.products)
+                        + b.other_cost
+                        + b.transportation_cost
+                    ),
                     "products": [
                         {
                             "code": p.code,
