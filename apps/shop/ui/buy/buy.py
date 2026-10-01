@@ -33,6 +33,9 @@ class BuyView(QWidget):
         self.date_after = None
         self.date_before = None
 
+        self.ordering = None
+        self.ordering_desc = False
+
         self.tree = QTreeWidget()
         self.tree.setColumnCount(7)
 
@@ -51,13 +54,20 @@ class BuyView(QWidget):
         self.tree.setAlternatingRowColors(True)
 
         header = self.tree.header()
+
         header.setStretchLastSection(False)
+        header.setSectionsClickable(True)
+        header.setSortIndicatorShown(False)
 
         for col in range(7):
             header.setSectionResizeMode(
                 col,
                 QHeaderView.Stretch,
             )
+
+        header.sectionClicked.connect(
+            self._on_header_clicked,
+        )
 
         self.tree.itemExpanded.connect(
             self._on_item_expanded,
@@ -166,7 +176,7 @@ class BuyView(QWidget):
         )
 
     # -----------------------------------------------------
-    # Filtros
+    # Filtros y ordenamiento
     # -----------------------------------------------------
 
     def _get_filters(self):
@@ -181,10 +191,42 @@ class BuyView(QWidget):
         if self.date_before is not None:
             filters["date_before"] = self.date_before.toPython()
 
+        if self.ordering is not None:
+            filters["ordering"] = self.ordering
+            filters["ordering_desc"] = self.ordering_desc
+
         return filters
 
     def _on_code_changed(self, value):
         self.code_filter = value.strip()
+        self.refresh()
+
+    def _on_header_clicked(self, column):
+        ordering_fields = {
+            0: "code",
+            1: "date",
+            2: "product_count",
+            3: "product_cost",
+            4: "other_cost",
+            5: "transportation_cost",
+            6: "total_cost",
+        }
+
+        ordering = ordering_fields[column]
+
+        if self.ordering == ordering:
+            self.ordering_desc = not self.ordering_desc
+        else:
+            self.ordering = ordering
+            self.ordering_desc = False
+
+        self.tree.header().setSortIndicator(
+            column,
+            (Qt.DescendingOrder if self.ordering_desc else Qt.AscendingOrder),
+        )
+
+        self.tree.header().setSortIndicatorShown(True)
+
         self.refresh()
 
     # -----------------------------------------------------
@@ -298,9 +340,14 @@ class BuyView(QWidget):
         self.date_after = None
         self.date_before = None
 
+        self.ordering = None
+        self.ordering_desc = False
+
         self.code_input.clear()
 
         self._update_date_button()
+
+        self.tree.header().setSortIndicatorShown(False)
 
         self.refresh()
 
