@@ -37,3 +37,9 @@ class BaseManager:
 
     def get(self, **kwargs):
         return self.session.query(self.model).filter_by(**kwargs).first()
+
+    def filter(self, **kwargs):
+        return self.session.query(self.model).filter_by(**kwargs)
+
+    def all(self):
+        return self.session.query(self.model).all()
