@@ -9,12 +9,30 @@ class BuyManager(BaseManager):
     model = Buy
 
     def list(self, **filters):
-        return (
-            self.session.query(Buy)
-            .options(selectinload(Buy.products))
-            .order_by(Buy.date.desc(), Buy.id.desc())
-            .all()
-        )
+        query = self.session.query(Buy).options(selectinload(Buy.products))
+
+        code = filters.get("code", None)
+
+        if code:
+            if filters.get("code_exact"):
+                query = query.filter(Buy.code == code)
+            else:
+                query = query.filter(Buy.code.ilike(f"%{code}%"))
+
+        date_after = filters.get("date_after", None)
+
+        if date_after:
+            query = query.filter(Buy.date > date_after)
+
+        date_before = filters.get("date_before", None)
+
+        if date_before:
+            query = query.filter(Buy.date < date_before)
+
+        return query.order_by(
+            Buy.date.desc(),
+            Buy.id.desc(),
+        ).all()
 
     def create(self, data):
         products = data.pop("products")

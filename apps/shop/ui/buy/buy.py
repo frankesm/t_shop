@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtCore import Qt, QSize, QTimer, QDate
 from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QMessageBox,
@@ -12,6 +12,10 @@ from PySide6.QtWidgets import (
     QTreeWidget,
     QSizePolicy,
     QWidget,
+    QLineEdit,
+    QMenu,
+    QDateEdit,
+    QDialog,
 )
 
 from apps.shop.ui.buy.new_buy_panel import NewBuyPanel
@@ -23,6 +27,11 @@ class BuyView(QWidget):
 
         self.controller = controller
         self.product_tables = {}
+
+        self.code_filter = ""
+
+        self.date_after = None
+        self.date_before = None
 
         self.tree = QTreeWidget()
         self.tree.setColumnCount(7)
@@ -66,12 +75,59 @@ class BuyView(QWidget):
         self.btn_new.clicked.connect(self.open_panel)
 
         top = QHBoxLayout()
+
         top.addWidget(QLabel(f"<h2>{controller.title}</h2>"))
+
         top.addStretch()
         top.addWidget(self.btn_new)
 
+        # -------------------------------------------------
+        # Filtros
+        # -------------------------------------------------
+
+        self.code_input = QLineEdit()
+        self.code_input.setPlaceholderText("Filtrar por código...")
+        self.code_input.setClearButtonEnabled(True)
+        self.code_input.setFixedWidth(220)
+
+        self.code_input.textChanged.connect(
+            self._on_code_changed,
+        )
+
+        self.btn_date_filter = QPushButton("Filtrar por fecha")
+        self.btn_date_filter.clicked.connect(
+            self._show_date_filter_menu,
+        )
+
+        self.btn_clear_filters = QPushButton("Limpiar filtros")
+        self.btn_clear_filters.clicked.connect(
+            self._clear_filters,
+        )
+
+        filters = QHBoxLayout()
+
+        filters.addWidget(
+            self.code_input,
+        )
+
+        filters.addWidget(
+            self.btn_date_filter,
+        )
+
+        filters.addWidget(
+            self.btn_clear_filters,
+        )
+
+        filters.addStretch()
+
+        # -------------------------------------------------
+        # Layout principal
+        # -------------------------------------------------
+
         left = QVBoxLayout()
+
         left.addLayout(top)
+        left.addLayout(filters)
         left.addWidget(self.tree)
 
         self.panel = NewBuyPanel(controller)
@@ -85,6 +141,10 @@ class BuyView(QWidget):
         root.addWidget(self.panel)
 
         self.refresh()
+
+    # -----------------------------------------------------
+    # Panel de nueva compra
+    # -----------------------------------------------------
 
     def open_panel(self):
         self.panel.reset()
@@ -104,6 +164,149 @@ class BuyView(QWidget):
             "Listo",
             "Compra registrada correctamente.",
         )
+
+    # -----------------------------------------------------
+    # Filtros
+    # -----------------------------------------------------
+
+    def _get_filters(self):
+        filters = {}
+
+        if self.code_filter:
+            filters["code"] = self.code_filter
+
+        if self.date_after is not None:
+            filters["date_after"] = self.date_after.toPython()
+
+        if self.date_before is not None:
+            filters["date_before"] = self.date_before.toPython()
+
+        return filters
+
+    def _on_code_changed(self, value):
+        self.code_filter = value.strip()
+        self.refresh()
+
+    # -----------------------------------------------------
+    # Filtro por fecha
+    # -----------------------------------------------------
+
+    def _show_date_filter_menu(self):
+        menu = QMenu(self)
+
+        after_action = menu.addAction("Después de")
+
+        before_action = menu.addAction("Antes de")
+
+        clear_action = menu.addAction("Limpiar filtro de fecha")
+
+        action = menu.exec(
+            self.btn_date_filter.mapToGlobal(self.btn_date_filter.rect().bottomLeft())
+        )
+
+        if action == after_action:
+            self._open_date_dialog(after=True)
+
+        elif action == before_action:
+            self._open_date_dialog(after=False)
+
+        elif action == clear_action:
+            self.date_after = None
+            self.date_before = None
+
+            self._update_date_button()
+            self.refresh()
+
+    def _open_date_dialog(self, after):
+        dialog = QDialog(self)
+
+        dialog.setWindowTitle("Filtrar por fecha")
+
+        layout = QVBoxLayout(dialog)
+
+        if after:
+            label = QLabel("Mostrar compras después de:")
+
+            current_date = (
+                self.date_after if self.date_after is not None else QDate.currentDate()
+            )
+
+        else:
+            label = QLabel("Mostrar compras antes de:")
+
+            current_date = (
+                self.date_before
+                if self.date_before is not None
+                else QDate.currentDate()
+            )
+
+        date_edit = QDateEdit()
+        date_edit.setCalendarPopup(True)
+        date_edit.setDate(current_date)
+
+        btn_apply = QPushButton("Aplicar")
+        btn_cancel = QPushButton("Cancelar")
+
+        buttons = QHBoxLayout()
+
+        buttons.addWidget(btn_cancel)
+        buttons.addWidget(btn_apply)
+
+        layout.addWidget(label)
+        layout.addWidget(date_edit)
+        layout.addLayout(buttons)
+
+        btn_cancel.clicked.connect(
+            dialog.reject,
+        )
+
+        def apply():
+            selected_date = date_edit.date()
+
+            if after:
+                self.date_after = selected_date
+            else:
+                self.date_before = selected_date
+
+            self._update_date_button()
+
+            dialog.accept()
+            self.refresh()
+
+        btn_apply.clicked.connect(apply)
+
+        dialog.exec()
+
+    def _update_date_button(self):
+        if self.date_after is None and self.date_before is None:
+            self.btn_date_filter.setText("Filtrar por fecha")
+            return
+
+        filters = []
+
+        if self.date_after is not None:
+            filters.append("Después de " + self.date_after.toString("dd/MM/yyyy"))
+
+        if self.date_before is not None:
+            filters.append("Antes de " + self.date_before.toString("dd/MM/yyyy"))
+
+        self.btn_date_filter.setText(" | ".join(filters))
+
+    def _clear_filters(self):
+        self.code_filter = ""
+
+        self.date_after = None
+        self.date_before = None
+
+        self.code_input.clear()
+
+        self._update_date_button()
+
+        self.refresh()
+
+    # -----------------------------------------------------
+    # Tabla de productos
+    # -----------------------------------------------------
 
     def _build_products_table(self, products):
         table = QTableWidget(
@@ -194,6 +397,10 @@ class BuyView(QWidget):
 
         return table
 
+    # -----------------------------------------------------
+    # Posicionamiento de tablas de productos
+    # -----------------------------------------------------
+
     def _position_product_tables(self):
         viewport = self.tree.viewport()
 
@@ -225,7 +432,10 @@ class BuyView(QWidget):
             table.show()
 
     def _schedule_reposition(self):
-        QTimer.singleShot(0, self._position_product_tables)
+        QTimer.singleShot(
+            0,
+            self._position_product_tables,
+        )
 
     def _on_item_expanded(self, item):
         self._schedule_reposition()
@@ -243,9 +453,14 @@ class BuyView(QWidget):
 
         self._position_product_tables()
 
+    # -----------------------------------------------------
+    # Carga
+    # -----------------------------------------------------
+
     def refresh(self):
         try:
-            buys = self.controller.list()
+            buys = self.controller.list(**self._get_filters())
+
         except Exception as exc:
             QMessageBox.critical(
                 self,
@@ -254,6 +469,9 @@ class BuyView(QWidget):
             )
             return
 
+        self._populate_tree(buys)
+
+    def _populate_tree(self, buys):
         expanded = {
             self.tree.topLevelItem(i).data(
                 0,

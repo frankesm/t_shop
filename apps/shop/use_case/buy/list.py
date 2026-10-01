@@ -7,7 +7,7 @@ from shared.base_usecase import ListUseCase
 class ListBuy(ListUseCase):
     def list(self, **filters):
         with session_scope() as session:
-            buys = self.manager_class(session).list()
+            buys = self.manager_class(session).list(**filters)
 
             return [
                 {
