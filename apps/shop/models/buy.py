@@ -13,7 +13,11 @@ class Buy(Base):
     other_cost = Column(DECIMAL(20, 2), nullable=False, default=0)
     transportation_cost = Column(DECIMAL(20, 2), nullable=False, default=0)
 
-    products = relationship("Product", back_populates="buy")
+    products = relationship(
+        "Product",
+        back_populates="buy",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"{self.date} - {self.code}"

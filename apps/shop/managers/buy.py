@@ -52,9 +52,13 @@ class BuyManager(BaseManager):
         ProductManager(self.session).create(products, obj)
         return obj
 
-    def update(self, obj, data):
+    def update(self, obj: Buy, data):
         for field, value in data.items():
             setattr(obj, field, value)
         self.session.add(obj)
         self.session.flush()
         return obj
+
+    def delete(self, obj: Buy):
+        self.session.delete(obj)
+        self.session.flush()

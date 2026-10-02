@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QDialog,
 )
 
-from apps.shop.ui.buy.asd import EditBuyDialog
+from apps.shop.ui.buy.edit_buy_dialog import EditBuyDialog
 from apps.shop.ui.buy.new_buy_panel import NewBuyPanel
 
 
@@ -94,6 +94,10 @@ class BuyView(QWidget):
         self.btn_update.setEnabled(False)
         self.btn_update.clicked.connect(self.open_update_dialog)
 
+        self.btn_delete = QPushButton("Eliminar")
+        self.btn_delete.setEnabled(False)
+        self.btn_delete.clicked.connect(self.delete_selected)
+
         top = QHBoxLayout()
 
         top.addWidget(QLabel(f"<h2>{controller.title}</h2>"))
@@ -101,6 +105,7 @@ class BuyView(QWidget):
         top.addStretch()
         top.addWidget(self.btn_new)
         top.addWidget(self.btn_update)
+        top.addWidget(self.btn_delete)
 
         # -------------------------------------------------
         # Filtros
@@ -187,7 +192,7 @@ class BuyView(QWidget):
         )
 
     # -----------------------------------------------------
-    # Actualizar compra
+    # Actualizar y eliminar compra
     # -----------------------------------------------------
 
     def _selected_buy(self):
@@ -201,7 +206,10 @@ class BuyView(QWidget):
         return self.buys.get(buy_id)
 
     def _update_buttons(self):
-        self.btn_update.setEnabled(self._selected_buy() is not None)
+        has_selection = self._selected_buy() is not None
+
+        self.btn_update.setEnabled(has_selection)
+        self.btn_delete.setEnabled(has_selection)
 
     def open_update_dialog(self):
         buy = self._selected_buy()
@@ -219,6 +227,48 @@ class BuyView(QWidget):
                 "Listo",
                 "Compra actualizada correctamente.",
             )
+
+    def delete_selected(self):
+        buy = self._selected_buy()
+
+        if buy is None:
+            return
+
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Question)
+        box.setWindowTitle("Eliminar compra")
+        box.setText(
+            f"¿Eliminar la compra {buy['code']} y sus productos?\n\n"
+            "Esta acción no se puede deshacer."
+        )
+
+        btn_yes = box.addButton("Sí", QMessageBox.YesRole)
+        btn_no = box.addButton("No", QMessageBox.NoRole)
+        box.setDefaultButton(btn_no)
+
+        box.exec()
+
+        if box.clickedButton() != btn_yes:
+            return
+
+        try:
+            self.controller.delete(buy["id"])
+
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"No se pudo eliminar:\n{exc}",
+            )
+            return
+
+        self.refresh()
+
+        QMessageBox.information(
+            self,
+            "Listo",
+            "Compra eliminada correctamente.",
+        )
 
     # -----------------------------------------------------
     # Filtros y ordenamiento
