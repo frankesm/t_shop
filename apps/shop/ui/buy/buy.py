@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QDialog,
 )
 
+from apps.shop.ui.buy.asd import EditBuyDialog
 from apps.shop.ui.buy.new_buy_panel import NewBuyPanel
 
 
@@ -27,6 +28,7 @@ class BuyView(QWidget):
 
         self.controller = controller
         self.product_tables = {}
+        self.buys = {}
 
         self.code_filter = ""
 
@@ -77,6 +79,10 @@ class BuyView(QWidget):
             self._on_item_collapsed,
         )
 
+        self.tree.itemSelectionChanged.connect(
+            self._update_buttons,
+        )
+
         self.tree.verticalScrollBar().valueChanged.connect(
             self._position_product_tables,
         )
@@ -84,12 +90,17 @@ class BuyView(QWidget):
         self.btn_new = QPushButton("+ Nueva compra")
         self.btn_new.clicked.connect(self.open_panel)
 
+        self.btn_update = QPushButton("Actualizar")
+        self.btn_update.setEnabled(False)
+        self.btn_update.clicked.connect(self.open_update_dialog)
+
         top = QHBoxLayout()
 
         top.addWidget(QLabel(f"<h2>{controller.title}</h2>"))
 
         top.addStretch()
         top.addWidget(self.btn_new)
+        top.addWidget(self.btn_update)
 
         # -------------------------------------------------
         # Filtros
@@ -174,6 +185,40 @@ class BuyView(QWidget):
             "Listo",
             "Compra registrada correctamente.",
         )
+
+    # -----------------------------------------------------
+    # Actualizar compra
+    # -----------------------------------------------------
+
+    def _selected_buy(self):
+        items = self.tree.selectedItems()
+
+        if not items:
+            return None
+
+        buy_id = items[0].data(0, Qt.UserRole)
+
+        return self.buys.get(buy_id)
+
+    def _update_buttons(self):
+        self.btn_update.setEnabled(self._selected_buy() is not None)
+
+    def open_update_dialog(self):
+        buy = self._selected_buy()
+
+        if buy is None:
+            return
+
+        dialog = EditBuyDialog(self.controller, buy, self)
+
+        if dialog.exec() == QDialog.Accepted:
+            self.refresh()
+
+            QMessageBox.information(
+                self,
+                "Listo",
+                "Compra actualizada correctamente.",
+            )
 
     # -----------------------------------------------------
     # Filtros y ordenamiento
@@ -519,6 +564,8 @@ class BuyView(QWidget):
         self._populate_tree(buys)
 
     def _populate_tree(self, buys):
+        self.buys = {b["id"]: b for b in buys}
+
         expanded = {
             self.tree.topLevelItem(i).data(
                 0,
@@ -587,3 +634,4 @@ class BuyView(QWidget):
             )
 
         self._schedule_reposition()
+        self._update_buttons()

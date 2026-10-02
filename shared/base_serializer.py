@@ -5,24 +5,44 @@ class Serializer:
 
     fields = {}
 
-    def __init__(self, data=None, parcial=False):
+    def __init__(self, data=None, parcial=False, instance=None):
         self.data = data or {}
         self.parcial = parcial
         self.errors = {}
         self.validated_data = {}
+        self.instance = instance
+        self.changed_fields = set()
+
+    def has_changed(self, field_name, value):
+        if self.instance is None or not hasattr(self.instance, field_name):
+            return True
+        return getattr(self.instance, field_name) != value
+
+    def _clean_field(self, field_name, field, data):
+        value = field.clean(data.get(field_name))
+
+        if not self.has_changed(field_name, value):
+            return value  # mismo valor que ya tenía: se salta validate_<campo>
+
+        self.changed_fields.add(field_name)
+
+        validador = getattr(self, f"validate_{field_name}", None)
+        if validador:
+            value = validador(value)
+
+        return value
 
     def is_valid(self):
         self.errors, self.validated_data = {}, {}
+        self.changed_fields = set()
 
         for field_name, field_value in self.fields.items():
             if self.parcial and field_name not in self.data:
                 continue
             try:
-                value = field_value.clean(self.data.get(field_name))
-                validador = getattr(self, f"validate_{field_name}", None)
-                if validador:
-                    value = validador(value)
-                self.validated_data[field_name] = value
+                self.validated_data[field_name] = self._clean_field(
+                    field_name, field_value, self.data
+                )
             except Exception as e:
                 error = e.args[0] if e.args else str(e)
 
@@ -53,13 +73,8 @@ class Serializer:
         for field_name, field_value in self.fields.items():
             if self.parcial and field_name not in data:
                 continue
-
-            value = field_value.clean(data.get(field_name))
-
-            validador = getattr(self, f"validate_{field_name}", None)
-            if validador:
-                value = validador(value)
-
-            validated_data[field_name] = value
+            validated_data[field_name] = self._clean_field(
+                field_name, field_value, data
+            )
 
         return validated_data

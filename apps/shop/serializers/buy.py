@@ -1,6 +1,8 @@
 from decimal import Decimal
 
+from apps.shop.managers.buy import BuyManager
 from apps.shop.serializers.product import ProductSerializer
+from config.database import session_scope
 from shared.base_field import DateField, PositiveDecimal, ListField, CharField
 from shared.base_serializer import Serializer
 
@@ -14,15 +16,9 @@ class BuySerializer(Serializer):
         "products": ListField(child=ProductSerializer()),
     }
 
-    # def general_validate(self, data):
-    #     if data.get("products", None):
-    #         total_cost = Decimal("0.00")
-    #         for item in data["products"]:
-    #             total_cost += item["buy_cost"]
-    #
-    #         if total_cost != data["cost"]:
-    #             raise ValueError(
-    #                 "El precio total de los productos debe ser igual al costo de la compra"
-    #             )
-    #
-    #     return data
+    def validate_code(self, data):
+        with session_scope() as session:
+            obj = BuyManager(session).get(code=data)
+            if obj:
+                raise ValueError("Ya existe un producto con ese código")
+        return data

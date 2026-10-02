@@ -115,7 +115,7 @@ class PositiveDecimal(DecimalField):
     def to_internal_value(self, value):
         number = super().to_internal_value(value)
 
-        if number <= 0:
+        if number < 0:
             raise Exception("Debe ser un número positivo.")
 
         return number
