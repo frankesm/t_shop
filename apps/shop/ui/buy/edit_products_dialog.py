@@ -13,11 +13,6 @@ from PySide6.QtWidgets import (
 from shared.exceptions import ValidacionError, GENERAL
 
 
-# Ajusta estos imports a tu proyecto
-# from shared.exceptions import ValidacionError
-# from shared.serializers import GENERAL
-
-
 class EditProductsDialog(QDialog):
     FIELDS = [
         ("code", "Código"),
@@ -32,6 +27,7 @@ class EditProductsDialog(QDialog):
 
         self.controller = controller
         self.buy_id = buy["id"]
+        self.original_products = buy["products"]
         self.buy_deleted = False
         self.action_col = len(self.FIELDS)
 
@@ -39,7 +35,7 @@ class EditProductsDialog(QDialog):
         self.setModal(True)
         self.resize(900, 400)
 
-        self.table = QTableWidget(len(buy["products"]), len(self.FIELDS) + 1)
+        self.table = QTableWidget(0, len(self.FIELDS) + 1)
         self.table.setHorizontalHeaderLabels([label for _, label in self.FIELDS] + [""])
         self.table.setAlternatingRowColors(True)
 
@@ -48,17 +44,19 @@ class EditProductsDialog(QDialog):
             header.setSectionResizeMode(col, QHeaderView.Stretch)
         header.setSectionResizeMode(self.action_col, QHeaderView.ResizeToContents)
 
-        for row, product in enumerate(buy["products"]):
-            self._fill_row(row, product)
+        self._load_rows(self.original_products)
 
+        btn_undo = QPushButton("Deshacer")
         btn_cancel = QPushButton("Cancelar")
         btn_save = QPushButton("Guardar")
         btn_save.setDefault(True)
 
+        btn_undo.clicked.connect(self._undo)
         btn_cancel.clicked.connect(self.reject)
         btn_save.clicked.connect(self.accept)
 
         buttons = QHBoxLayout()
+        buttons.addWidget(btn_undo)
         buttons.addStretch()
         buttons.addWidget(btn_cancel)
         buttons.addWidget(btn_save)
@@ -68,6 +66,13 @@ class EditProductsDialog(QDialog):
         layout.addLayout(buttons)
 
     # -- filas
+    def _load_rows(self, products):
+        self.table.setRowCount(0)
+        self.table.setRowCount(len(products))
+
+        for row, product in enumerate(products):
+            self._fill_row(row, product)
+
     def _fill_row(self, row, product):
         for col, (field, _) in enumerate(self.FIELDS):
             item = QTableWidgetItem(str(product[field]))
@@ -96,6 +101,9 @@ class EditProductsDialog(QDialog):
             }
             for row in range(self.table.rowCount())
         ]
+
+    def _undo(self):
+        self._load_rows(self.original_products)
 
     # -- errores
     def _clear_errors(self):
@@ -176,24 +184,34 @@ class EditProductsDialog(QDialog):
             )
 
     # -- guardar
-    def _confirm_delete_buy(self):
+    def _ask(self, title, text):
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Question)
-        box.setWindowTitle("Compra sin productos")
-        box.setText(
-            "Se eliminaron todos los productos, por lo que la compra "
-            "también se eliminará.\n\n¿Continuar?"
-        )
+        box.setWindowTitle(title)
+        box.setText(text)
         btn_yes = box.addButton("Sí", QMessageBox.YesRole)
         btn_no = box.addButton("No", QMessageBox.NoRole)
         box.setDefaultButton(btn_no)
         box.exec()
         return box.clickedButton() == btn_yes
 
+    def _confirm_save(self):
+        if self.table.rowCount() == 0:
+            return self._ask(
+                "Compra sin productos",
+                "Se eliminaron todos los productos, por lo que la compra "
+                "también se eliminará.\n\n¿Continuar?",
+            )
+
+        return self._ask(
+            "Guardar cambios",
+            "¿Guardar los cambios realizados en los productos?",
+        )
+
     def accept(self):
         self._clear_errors()
 
-        if self.table.rowCount() == 0 and not self._confirm_delete_buy():
+        if not self._confirm_save():
             return
 
         try:

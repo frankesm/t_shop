@@ -1,11 +1,11 @@
-from apps.shop.serializers.product import ProductSerializer
+from apps.shop.serializers.product import ProductSerializer, ProductUpdateSerializer
 from shared.base_field import ListField
 from shared.base_serializer import Serializer
 
 
 class UpdateBuyProductsSerializer(Serializer):
     fields = {
-        "products": ListField(child=ProductSerializer()),
+        "products": ListField(child=ProductUpdateSerializer()),
     }
 
     def __init__(self, *args, **kwargs):

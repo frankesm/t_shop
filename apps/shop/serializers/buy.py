@@ -16,6 +16,13 @@ class BuySerializer(Serializer):
         "products": ListField(child=ProductSerializer()),
     }
 
+    def validate_products(self, data):
+        codes = [product["code"] for product in data]
+
+        if len(codes) != len(set(codes)):
+            raise ValueError("Los códigos de los productos deben ser únicos")
+        return data
+
     def validate_code(self, data):
         with session_scope() as session:
             obj = BuyManager(session).get(code=data)

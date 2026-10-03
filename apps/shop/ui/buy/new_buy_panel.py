@@ -1,21 +1,27 @@
-from PySide6.QtCore import Signal, Qt, QDate
+from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QStackedWidget,
     QVBoxLayout,
-    QWidget,
+    QHBoxLayout,
     QLabel,
     QDateEdit,
     QLineEdit,
     QFormLayout,
     QPushButton,
-    QHBoxLayout,
     QScrollArea,
+    QWidget,
     QMessageBox,
 )
 
 from apps.shop.ui.buy.product_row import ProductRow
-from shared.exceptions import ValidacionError, GENERAL
+from shared.exceptions import GENERAL, ValidacionError
+
+
+# Ajusta estos imports a tu proyecto
+# from shared.exceptions import ValidacionError, GENERAL
+# from apps.shop.ui.buy.product_row import ProductRow
+
 
 class NewBuyPanel(QFrame):
     saved = Signal()
@@ -309,10 +315,8 @@ class NewBuyPanel(QFrame):
         messages,
         general_messages,
     ):
-
         if isinstance(messages, str):
-            general_messages.append(messages)
-            return
+            messages = [messages]
 
         if not isinstance(messages, (list, tuple)):
             general_messages.append(str(messages))
@@ -320,6 +324,11 @@ class NewBuyPanel(QFrame):
 
         for row_index, product_errors in enumerate(messages):
             if not product_errors:
+                continue
+
+            # Mensaje a nivel de la lista (no de una fila), p. ej. códigos repetidos
+            if isinstance(product_errors, str):
+                self._show_repeated_code_error(product_errors, general_messages)
                 continue
 
             if row_index >= len(self.rows):
@@ -331,6 +340,19 @@ class NewBuyPanel(QFrame):
                 continue
 
             self.rows[row_index].show_errors(product_errors)
+
+    def _show_repeated_code_error(self, message, general_messages):
+        codes = [str(row.data().get("code", "")).strip() for row in self.rows]
+
+        marked = False
+        for row, code in zip(self.rows, codes):
+            if code and codes.count(code) > 1:
+                row.show_errors({"code": [message]})
+                marked = True
+
+        # Si no se pudo ubicar ninguna fila, el mensaje no se pierde
+        if not marked:
+            general_messages.append(message)
 
     def reset(self):
         for row in self.rows:
