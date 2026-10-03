@@ -14,22 +14,10 @@ class Serializer:
         self.errors = {}
         self.validated_data = {}
         self.changed_fields = set()
-        self._instance_resolver = None  # lo asigna el serializer padre
-
-        # Copia por instancia para que los hijos no se compartan entre usos
+        self._instance_resolver = None
         self.fields = copy.deepcopy(self.fields)
 
-    # -----------------------------------------------------
-    # Anidamiento
-    # -----------------------------------------------------
-
     def get_child_instance(self, field_name, data):
-        """Instancia que se le pasa al serializer anidado del campo `field_name`.
-
-        `data` es el dato que valida el hijo (el dict de la fila o del
-        sub-objeto). Por defecto devuelve la instancia del padre.
-        Sobrescríbelo para pasar otra instancia, o None.
-        """
         return self.instance
 
     def _pass_instance_to_child(self, field_name, field):
@@ -39,10 +27,6 @@ class Serializer:
             field._instance_resolver = resolver
         elif hasattr(field, "instance_resolver"):
             field.instance_resolver = resolver
-
-    # -----------------------------------------------------
-    # Cambios respecto a la instancia
-    # -----------------------------------------------------
 
     def has_changed(self, field_name, value):
         if self.instance is None or not hasattr(self.instance, field_name):

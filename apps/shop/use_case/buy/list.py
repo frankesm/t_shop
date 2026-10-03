@@ -25,6 +25,7 @@ class ListBuy(ListUseCase):
                     ),
                     "products": [
                         {
+                            "id": p.id,
                             "code": p.code,
                             "name": p.name,
                             "unit": p.unit,

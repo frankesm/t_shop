@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QDialog,
 )
 
+from apps.shop.ui.buy.asd import EditProductsDialog
 from apps.shop.ui.buy.edit_buy_dialog import EditBuyDialog
 from apps.shop.ui.buy.new_buy_panel import NewBuyPanel
 
@@ -90,9 +91,13 @@ class BuyView(QWidget):
         self.btn_new = QPushButton("+ Nueva compra")
         self.btn_new.clicked.connect(self.open_panel)
 
-        self.btn_update = QPushButton("Actualizar")
+        self.btn_update = QPushButton("Actualizar compra")
         self.btn_update.setEnabled(False)
         self.btn_update.clicked.connect(self.open_update_dialog)
+
+        self.btn_update_products = QPushButton("Actualizar productos")
+        self.btn_update_products.setEnabled(False)
+        self.btn_update_products.clicked.connect(self.open_products_dialog)
 
         self.btn_delete = QPushButton("Eliminar")
         self.btn_delete.setEnabled(False)
@@ -105,6 +110,7 @@ class BuyView(QWidget):
         top.addStretch()
         top.addWidget(self.btn_new)
         top.addWidget(self.btn_update)
+        top.addWidget(self.btn_update_products)
         top.addWidget(self.btn_delete)
 
         # -------------------------------------------------
@@ -209,6 +215,7 @@ class BuyView(QWidget):
         has_selection = self._selected_buy() is not None
 
         self.btn_update.setEnabled(has_selection)
+        self.btn_update_products.setEnabled(has_selection)
         self.btn_delete.setEnabled(has_selection)
 
     def open_update_dialog(self):
@@ -227,6 +234,25 @@ class BuyView(QWidget):
                 "Listo",
                 "Compra actualizada correctamente.",
             )
+
+    def open_products_dialog(self):
+        buy = self._selected_buy()
+
+        if buy is None:
+            return
+
+        dialog = EditProductsDialog(self.controller, buy, self)
+
+        if dialog.exec() == QDialog.Accepted:
+            self.refresh()
+
+            message = (
+                "La compra se quedó sin productos y fue eliminada."
+                if dialog.buy_deleted
+                else "Productos actualizados correctamente."
+            )
+
+            QMessageBox.information(self, "Listo", message)
 
     def delete_selected(self):
         buy = self._selected_buy()
