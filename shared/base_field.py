@@ -126,6 +126,7 @@ class ListField(Field):
         super().__init__(**kwargs)
         self.child = child
         self.min_items = min_items
+        self.instance_resolver = None
 
     def to_internal_value(self, value):
         name = getattr(self.child, "verbose_name", "Elemento")
@@ -139,6 +140,7 @@ class ListField(Field):
         items, errors = [], []
         for raw in value:
             serializer = serializer_class(raw)
+            serializer._instance_resolver = self.instance_resolver
             if serializer.is_valid():
                 items.append(serializer.validated_data)
                 errors.append({})
