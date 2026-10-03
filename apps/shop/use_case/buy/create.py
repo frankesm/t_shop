@@ -5,7 +5,7 @@ from shared.base_usecase import CreateUseCase
 class CreateBuy(CreateUseCase):
 
     def create(self, data):
-        buy_serializer = self.serializer_class(data)
+        buy_serializer = self.serializer_class["create"](data)
         buy_serializer.validate()
 
         with session_scope() as session:

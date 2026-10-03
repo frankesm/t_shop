@@ -6,7 +6,9 @@ class UpdateBuy(UpdateUseCase):
 
     def update(self, pk, data):
         instance = self.get_or_fail(pk)
-        buy_serializer = self.serializer_class(data, parcial=True, instance=instance)
+        buy_serializer = self.serializer_class["update"](
+            data, parcial=True, instance=instance
+        )
         buy_serializer.validate()
 
         with session_scope() as session:

@@ -1,4 +1,3 @@
-from apps.shop.serializers.update_buy_product import UpdateBuyProductsSerializer
 from config.database import session_scope
 
 
@@ -12,7 +11,9 @@ class UpdateRemoveBuyProducts:
                 buy_manager.delete(buy)
                 return
 
-            serializer = UpdateBuyProductsSerializer({"products": data}, instance=buy)
+            serializer = self.serializer_class["update_products"](
+                {"products": data}, instance=buy
+            )
             serializer.validate()
             data = serializer.validated_data
 
