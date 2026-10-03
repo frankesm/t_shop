@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
     QDialog,
 )
 
-from apps.shop.ui.buy.asd import EditProductsDialog
 from apps.shop.ui.buy.edit_buy_dialog import EditBuyDialog
+from apps.shop.ui.buy.edit_products_dialog import EditProductsDialog
 from apps.shop.ui.buy.new_buy_panel import NewBuyPanel
 
 
