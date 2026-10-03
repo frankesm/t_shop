@@ -25,7 +25,7 @@ class ProductSerializer(Serializer):
 class ProductUpdateSerializer(Serializer):
 
     fields = {
-        "id": IntegerField(required=False),
+        "id": IntegerField(),
         "code": CharField(max_length=255),
         "name": CharField(max_length=255),
         "unit": CharField(max_length=255, required=False, default="Unidades"),
