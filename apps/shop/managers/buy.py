@@ -49,7 +49,7 @@ class BuyManager(BaseManager):
         self.session.add(obj)
         self.session.flush()
 
-        ProductManager(self.session).create(products, obj)
+        ProductManager(self.session).create_many(products, obj)
         return obj
 
     def update(self, obj: Buy, data):
@@ -62,3 +62,9 @@ class BuyManager(BaseManager):
     def delete(self, obj: Buy):
         self.session.delete(obj)
         self.session.flush()
+
+    def update_products(self, changes, removed):
+        product_manager = ProductManager(self.session)
+
+        product_manager.delete_many(removed)
+        product_manager.update_many(changes)
